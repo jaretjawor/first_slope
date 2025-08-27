@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Is This Point on the Line?</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    #solution { padding: 20px; margin-top: 10px; display: none; }
+    #graph { width: 300px; height: 200px; border: 1px solid #ccc; background: #fff; }
+    .expander { cursor: pointer; color: #0077cc; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <h2>Is this point on the line?</h2>
+  <p id="question"></p>
+  <button class="expander" onclick="showSolution()">Show Solution</button>
+  <div id="solution">
+    <canvas id="graph"></canvas>
+    <div id="answerText" style="margin-top:10px;"></div>
+  </div>
+  <script>
+    // Randomly generate a line y = mx + b and a point (x0, y0)
+    let m, b, x0, y0, correct;
+    function randomInt(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+
+    function generateQuestion() {
+      m = randomInt(-3, 3);
+      if (m === 0) m = 1; // avoid zero slope for variety
+      b = randomInt(-5, 5);
+      x0 = randomInt(0, 8);
+      // Decide randomly if the point is on the line or not
+      correct = Math.random() < 0.5;
+      if (correct) {
+        y0 = m * x0 + b;
+      } else {
+        // Offset y0 so it's not on the line
+        let offset = randomInt(1, 3);
+        y0 = m * x0 + b + offset * (Math.random() < 0.5 ? 1 : -1);
+      }
+      document.getElementById('question').innerHTML =
+        `Given the line <strong>y = ${m}x ${b >= 0 ? '+ ' + b : '- ' + Math.abs(b)}</strong>, is the point <strong>(${x0}, ${y0})</strong> on the line?`;
+    }
+
+    function showSolution() {
+      document.getElementById('solution').style.display = 'block';
+      drawGraph();
+      const yOnLine = m * x0 + b;
+      const isCorrect = y0 === yOnLine;
+      document.getElementById('solution').style.background = isCorrect ? '#c8f7c5' : '#f7c5c5';
+      document.getElementById('answerText').innerHTML =
+        isCorrect
+          ? `<strong>Yes, the point (${x0}, ${y0}) is on the line y = ${m}x ${b >= 0 ? '+ ' + b : '- ' + Math.abs(b)}.</strong><br>Because ${m}×${x0}${b >= 0 ? ' + ' + b : ' - ' + Math.abs(b)} = ${y0}.`
+          : `<strong>No, the point (${x0}, ${y0}) is not on the line y = ${m}x ${b >= 0 ? '+ ' + b : '- ' + Math.abs(b)}.</strong><br>Because ${m}×${x0}${b >= 0 ? ' + ' + b : ' - ' + Math.abs(b)} = ${yOnLine}, not ${y0}.`;
+    }
+
+    function drawGraph() {
+      const canvas = document.getElementById('graph');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Set up zoomed out grid
+  const gridSize = 30; // number of lines in each direction
+      const unitPx = 12;   // pixels per unit (smaller for zoom out)
+      const width = canvas.width;
+      const height = canvas.height;
+      const originX = width / 2;
+      const originY = height / 2;
+
+      // Draw grid lines
+      ctx.strokeStyle = '#eee';
+      ctx.lineWidth = 1;
+      for (let i = -gridSize; i <= gridSize; i++) {
+        // Vertical grid
+        ctx.beginPath();
+        ctx.moveTo(originX + i * unitPx, 0);
+        ctx.lineTo(originX + i * unitPx, height);
+        ctx.stroke();
+        // Horizontal grid
+        ctx.beginPath();
+        ctx.moveTo(0, originY - i * unitPx);
+        ctx.lineTo(width, originY - i * unitPx);
+        ctx.stroke();
+      }
+
+      // Draw axes
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      // x-axis
+      ctx.beginPath();
+      ctx.moveTo(0, originY);
+      ctx.lineTo(width, originY);
+      ctx.stroke();
+      // y-axis
+      ctx.beginPath();
+      ctx.moveTo(originX, 0);
+      ctx.lineTo(originX, height);
+      ctx.stroke();
+
+      // Draw line y = mx + b
+      ctx.strokeStyle = '#0077cc';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      let started = false;
+      for (let px = 0; px <= width; px++) {
+        let x = (px - originX) / unitPx;
+        let y = m * x + b;
+        let py = originY - y * unitPx;
+        if (!started) { ctx.moveTo(px, py); started = true; }
+        else { ctx.lineTo(px, py); }
+      }
+      ctx.stroke();
+
+      // Draw point (x0, y0)
+      let px = originX + x0 * unitPx;
+      let py = originY - y0 * unitPx;
+      ctx.beginPath();
+      ctx.arc(px, py, 6, 0, 2 * Math.PI);
+      ctx.fillStyle = '#e74c3c';
+      ctx.fill();
+
+      // Label point
+      ctx.fillStyle = '#000';
+      ctx.font = '14px Arial';
+      ctx.fillText(`(${x0},${y0})`, px + 8, py - 8);
+    }
+
+    // Generate a new question on page load
+    window.onload = generateQuestion;
+  </script>
+</body>
+</html>
